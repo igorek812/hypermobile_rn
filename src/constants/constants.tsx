@@ -1,0 +1,3 @@
+export const CONSTANTS = {
+    AGENT_WALLET_KEY: 'AGENT_WALLET_KEY'
+}
