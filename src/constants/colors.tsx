@@ -11,6 +11,7 @@ export const COLORS = {
     
     HL_BG: "#0F1A1E",
     HL_BG1: "#1B2429",
+    HL_BG1_05: "#1B242950",
     HL_BORDER: "#273035",
     
     HL_TEXT_SECOND: "#04060C"

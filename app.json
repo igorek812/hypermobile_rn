@@ -4,23 +4,25 @@
     "slug": "hypermobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/app_icon_hypermobile_rn.png",
     "scheme": "hypermobilern",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
+      "googleServicesFile": "./assets/GoogleService-Info.plist",
       "supportsTablet": true,
-      "bundleIdentifier": "com.hyper.hypermobile",
+      "bundleIdentifier": "com.btc.hypermobile",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "appleTeamId": "X9ARV8DQ77"
     },
     "android": {
+      "googleServicesFile": "./assets/google-services.json",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#08453D",
+        "foregroundImage": "./assets/images/app_icon_hypermobile_rn.png",
+        "monochromeImage": "./assets/images/app_icon_hypermobile_rn.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -28,7 +30,7 @@
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.hyper.hypermobile"
+      "package": "com.btc.hypermobile"
     },
     "web": {
       "output": "static",
@@ -36,22 +38,31 @@
     },
     "plugins": [
       "expo-router",
+      "@react-native-firebase/app",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
+          "image": "./assets/images/app_icon_hypermobile_rn.png",
+          "imageWidth": 100,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#08453D",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#08453D"
           }
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera for scan QR code",
           "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
           "recordAudioAndroid": true
         }

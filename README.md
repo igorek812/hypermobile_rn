@@ -48,3 +48,55 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+
+чтобы сделать сборку надо сбилдить папки ios и андройд, делается это командой
+npx expo prebuild
+
+в ios нужно прописывать профайлы
+
+# ОБЯЗАТЕЛЬНО ПРОПИСАТЬ! Отключение Ad Id для Firebase Analytics
+# Отключение Ad Id для Firebase Analytics
+$RNFirebaseAnalyticsWithoutAdIdSupport = true
+
+# Остальное содержимое Podfile...
+target 'hypermobile' do
+  # ...
+end
+
+
+
+для того чтобы перегенирировать папки ios и андройд
+npx expo prebuild --clean
+
+# Просто запускает Metro сервер (без нативной сборки)
+expo start
+
+# Собирает production версию (APK/AAB)
+expo build:android
+
+# Только генерирует нативные папки (без сборки)
+expo prebuild
+
+# Сборка и запуск для Android
+expo run:android
+
+# Сборка и запуск для iOS
+expo run:ios
+
+
+для сборки нормального билда андройд
+eas build --platform android --profile preview
+
+если ошибки с подами вот возможный фикс
+
+https://rnfirebase.io/
+
+target 'hypermobile' do
+  # Добавьте эту строку
+  use_modular_headers!
+  
+  # Остальной код...
+end
+
+

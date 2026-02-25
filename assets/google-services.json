@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "528778761142",
+    "project_id": "hypermobile-ba484",
+    "storage_bucket": "hypermobile-ba484.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:528778761142:android:f8d62eb85905c218ffa717",
+        "android_client_info": {
+          "package_name": "com.btc.hypermobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCNm2SaRL87-dWZ8hhzR1Yf7VLT2WJ2iKw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

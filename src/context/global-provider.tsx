@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, ReactNode, useContext, useState } from "react";
 import AgentWalletModel from "../models/agent-wallet-model";
 
 interface AuthContextType {
@@ -20,8 +20,8 @@ const GlobalContext = createContext<AuthContextType>({
 
 export const useGlobalContext = () => useContext(GlobalContext)
 
-const GlobalProvider = ({children}: {children: any}) => {
-
+const GlobalProvider = ({children}: {children: ReactNode}) => {
+    
     const [agentWallet, setAgentWallet] = useState<AgentWalletModel | null>(null)
     const [isLoading, setIsLoading] = useState(true)
 

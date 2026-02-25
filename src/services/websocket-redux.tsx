@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import AssetModel from '../models/asset-model'
+import { AssetModel } from '../models/asset-model'
 
 export interface WebSocketState {
     isConnect: boolean

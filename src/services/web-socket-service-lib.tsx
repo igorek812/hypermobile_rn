@@ -2,7 +2,7 @@ import "event-target-polyfill";
 import "fast-text-encoding";
 
 import { ISubscription, L2BookResponse, SubscriptionClient, UserFillsWsEvent, UserFundingsWsEvent, UserHistoricalOrdersWsEvent, WebData2Response, WebSocketTransport } from "@nktkas/hyperliquid";
-import AssetModel from "../models/asset-model";
+import { AssetInfoModel, AssetModel } from "../models/asset-model";
 import BalanceModel from "../models/balance-model";
 import FundingHistoryModel from "../models/funding-history-model";
 import L2BookLevelModel from "../models/l2-book-level-model";
@@ -10,16 +10,59 @@ import OpenOrdersModel from "../models/open-orders-model";
 import OrderHistoryModel from "../models/order-history-model";
 import TradeHistoryModel from "../models/trade-history-model";
 import store from "../store/store";
-import { setAssetL2Book, setSelectedAsset, setUserAssetPositions, setUserBalances, setUserFundingHistory, setUserOpenOrders, setUserOrderHistory, setUserTradeHistory } from "./trade-redux";
+import { accountSliceActions } from "./account-redux";
+import { tradeSliceActions } from "./trade-redux";
 import { setAssets } from "./websocket-redux";
 
+if (!globalThis.CustomEvent) {
+    // @ts-ignore
+    globalThis.CustomEvent = function (type, params) {
+        params = params || {};
+        const event: any = new Event(type, params);
+        event.detail = params.detail || null;
+        return event;
+    };
+}
+
+if (!AbortSignal.timeout) {
+    AbortSignal.timeout = function (delay) {
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(), delay);
+        return controller.signal;
+    };
+}
+
+if (!Promise.withResolvers) {
+    // @ts-ignore
+    Promise.withResolvers = function () {
+        let resolve, reject;
+        const promise = new Promise((res, rej) => {
+            resolve = res;
+            reject = rej;
+        });
+        return { promise, resolve, reject };
+    };
+}
+
+if (!ArrayBuffer.prototype.transfer) {
+    ArrayBuffer.prototype.transfer = function (newByteLength) {
+        const length = newByteLength ?? this.byteLength;
+        const newBuffer = new ArrayBuffer(length);
+        const oldView = new Uint8Array(this);
+        const newView = new Uint8Array(newBuffer);
+        newView.set(oldView.subarray(0, Math.min(oldView.length, length)));
+        Object.defineProperty(this, "byteLength", { value: 0 });
+        return newBuffer;
+    };
+}
+
 class WebSocketService {
-    private constructor() {}
+    private constructor() { }
 
     private static instance?: WebSocketService
 
     callbacks: any = {};
-    
+
     client: SubscriptionClient | null = null
 
     public static getInstance(): WebSocketService {
@@ -37,6 +80,12 @@ class WebSocketService {
 
         const transport = new WebSocketTransport();
         this.client = new SubscriptionClient({ transport });
+
+        transport.socket.addEventListener("open", () => { console.log("addEventListener open") })
+        transport.socket.addEventListener("close", () => { console.log("addEventListener close") })
+        transport.socket.addEventListener("error", () => { console.log("addEventListener error") })
+        transport.socket.addEventListener("terminate", () => { console.log("addEventListener terminate") })
+        // transport.socket.addEventListener("message", () => { console.log("addEventListener message") })
     };
 
     webData2Subscribtion: ISubscription | null = null
@@ -45,7 +94,7 @@ class WebSocketService {
     userHistoricalOrdersSubscribtion: ISubscription | null = null
     userTradeHistorySubscribtion: ISubscription | null = null
 
-    async subscribeToWebData2({user}: {user: string}) {
+    async subscribeToWebData2({ user }: { user: string }) {
         if (this.client == null) {
             console.log("subscribeToWebData2 error. client is null")
             return
@@ -53,11 +102,11 @@ class WebSocketService {
 
         await this.webData2Subscribtion?.unsubscribe()
 
-        this.webData2Subscribtion = await this.client.webData2({user: user}, this.webData2Handler)
+        this.webData2Subscribtion = await this.client.webData2({ user: user }, this.webData2Handler)
     }
 
 
-    async subscribeToL2Book({coin}: {coin: string}) {
+    async subscribeToL2Book({ coin }: { coin: string }) {
         if (this.client == null) {
             console.log("subscribeToL2 error. client is null")
             return
@@ -65,11 +114,11 @@ class WebSocketService {
 
         await this.l2BookSubscribtion?.unsubscribe()
 
-        this.l2BookSubscribtion = await this.client.l2Book({coin: coin}, this.l2BookHandler)
+        this.l2BookSubscribtion = await this.client.l2Book({ coin: coin }, this.l2BookHandler)
     }
 
 
-    async subscribeToUserTradeHistory({user}: {user: string}) {
+    async subscribeToUserTradeHistory({ user }: { user: string }) {
         if (this.client == null) {
             console.log("subscribeToUserTradeHistory error. client is null")
             return
@@ -77,8 +126,9 @@ class WebSocketService {
 
         await this.userTradeHistorySubscribtion?.unsubscribe()
 
-        this.userTradeHistorySubscribtion = await this.client.userFills({user: user}, this.userFillsHandler)
+        this.userTradeHistorySubscribtion = await this.client.userFills({ user: user }, this.userFillsHandler)
     }
+
 
     userFillsHandler = (userFillsResponse: UserFillsWsEvent) => {
 
@@ -101,11 +151,11 @@ class WebSocketService {
             }
         })
 
-        store.dispatch(setUserTradeHistory(userTradeHistory))
+        store.dispatch(tradeSliceActions.setUserTradeHistory(userTradeHistory))
     }
 
 
-    async subscribeToOrderHistory({user}: {user: string}) {
+    async subscribeToOrderHistory({ user }: { user: string }) {
         if (this.client == null) {
             console.log("subscribeToOrderHistory error. client is null")
             return
@@ -113,38 +163,38 @@ class WebSocketService {
 
         await this.userHistoricalOrdersSubscribtion?.unsubscribe()
 
-        this.userHistoricalOrdersSubscribtion = await this.client.userHistoricalOrders({user: user}, this.userHistoricalOrdersHandler)
+        this.userHistoricalOrdersSubscribtion = await this.client.userHistoricalOrders({ user: user }, this.userHistoricalOrdersHandler)
     }
 
     userHistoricalOrdersHandler = (historicalOrders: UserHistoricalOrdersWsEvent) => {
         let tempOrders: OrderHistoryModel[] = historicalOrders.orderHistory.map((e) => {
             return {
                 order: {
-                        coin: e.order.coin,
-                        side: e.order.side,
-                        limitPx: e.order.limitPx,
-                        sz: e.order.sz,
-                        oid: e.order.oid,
-                        timestamp: e.order.timestamp,
-                        triggerCondition: e.order.triggerCondition,
-                        isTrigger: e.order.isTrigger,
-                        triggerPx: e.order.triggerPx,
-                        children: [],
-                        isPositionTpsl: e.order.isPositionTpsl,
-                        reduceOnly: e.order.reduceOnly,
-                        orderType: e.order.orderType,
-                        origSz: e.order.origSz,
-                        tif: e.order.tif
+                    coin: e.order.coin,
+                    side: e.order.side,
+                    limitPx: e.order.limitPx,
+                    sz: e.order.sz,
+                    oid: e.order.oid,
+                    timestamp: e.order.timestamp,
+                    triggerCondition: e.order.triggerCondition,
+                    isTrigger: e.order.isTrigger,
+                    triggerPx: e.order.triggerPx,
+                    children: [],
+                    isPositionTpsl: e.order.isPositionTpsl,
+                    reduceOnly: e.order.reduceOnly,
+                    orderType: e.order.orderType,
+                    origSz: e.order.origSz,
+                    tif: e.order.tif
                 },
                 status: e.status,
                 statusTimestamp: e.statusTimestamp
             }
         })
 
-        store.dispatch(setUserOrderHistory(tempOrders))
+        store.dispatch(tradeSliceActions.setUserOrderHistory(tempOrders))
     }
 
-    async subscribeToFundingHistory({user}: {user: string}) {
+    async subscribeToFundingHistory({ user }: { user: string }) {
         if (this.client == null) {
             console.log("subscribeToFundingHistory error. client is null")
             return
@@ -152,7 +202,7 @@ class WebSocketService {
 
         await this.userFundingsSubscribtion?.unsubscribe()
 
-        this.userFundingsSubscribtion = await this.client.userFundings({user: user}, this.userFundingsHandler)
+        this.userFundingsSubscribtion = await this.client.userFundings({ user: user }, this.userFundingsHandler)
     }
 
     userFundingsHandler = (userFundings: UserFundingsWsEvent) => {
@@ -166,25 +216,28 @@ class WebSocketService {
             }
         })
 
-        store.dispatch(setUserFundingHistory(tempFunding))
+        store.dispatch(tradeSliceActions.setUserFundingHistory(tempFunding))
     }
 
 
 
-//   disconnect() {
-//     if (this.ws) {
-//       this.ws.close();
-//       this.ws = null;
-//       this.isConnected = false;
-//       clearTimeout(this.timeout);
-//     }
-//   }
+    //   disconnect() {
+    //     if (this.ws) {
+    //       this.ws.close();
+    //       this.ws = null;
+    //       this.isConnected = false;
+    //       clearTimeout(this.timeout);
+    //     }
+    //   }
 
     // MARK: - Handlers
 
     webData2Handler = (webData2: WebData2Response) => {
-        // console.log("webData2 = ", data)
-        
+        // console.log("webData2 = ", webData2)
+
+        const tradeState = store.getState().trade
+        const selectedAssetName = tradeState.selectedAssetName
+
         // MARK: - ASSETS
 
         let tempAssets: AssetModel[] = []
@@ -197,7 +250,7 @@ class WebSocketService {
                 szDecimals: metaData.szDecimals,
                 name: metaData.name,
                 maxLeverage: metaData.maxLeverage,
-                
+
                 prevDayPx: ctxData.prevDayPx,
                 markPx: ctxData.markPx,
                 midPx: ctxData.midPx,
@@ -205,17 +258,36 @@ class WebSocketService {
             }
 
             tempAssets.push(newItem)
+
+            if (metaData.name == selectedAssetName) {
+
+                const ai: AssetInfoModel = {
+                    name: metaData.name,
+                    markPx: ctxData.markPx,
+                    oraclePx: ctxData.oraclePx,
+                    dayVlm: ctxData.dayNtlVlm,
+                    oi: (Number(ctxData.openInterest) * Number(ctxData.markPx)).toFixed(2),
+                    funding: ctxData.funding,
+                    countdown: "",
+                    prevDayPx: ctxData.prevDayPx,
+                    maxLeverage: metaData.maxLeverage
+                }
+
+                store.dispatch(tradeSliceActions.setSelectedAssetInfo(ai))
+            }
         }
 
-        if (store.getState().trade.selectedAsset == null && tempAssets[0] != null) {
-            store.dispatch(setSelectedAsset(tempAssets[0]))
+        if (tradeState.selectedAssetName == null && tempAssets[0] != null) {
+            store.dispatch(tradeSliceActions.setSelectedAssetName(tempAssets[0].name))
         }
         store.dispatch(setAssets(tempAssets))
 
         // MARK: - Balances
-        
+
+        let accountSpotBalance = 0
+
         let tempBalances: BalanceModel[] = []
-        
+
         let perpsBalance: BalanceModel = {
             isPerps: true,
             coin: "USDC",
@@ -223,10 +295,10 @@ class WebSocketService {
             availableBalance: webData2.clearinghouseState.withdrawable,
             totalBalance: webData2.clearinghouseState.marginSummary.accountValue
         }
-        
+
         tempBalances.push(perpsBalance)
-        
-        webData2.spotState?.balances.forEach ((spotBalance: any) => {
+
+        webData2.spotState?.balances.forEach((spotBalance: any) => {
             tempBalances.push({
                 isPerps: false,
                 coin: spotBalance.coin,
@@ -234,28 +306,30 @@ class WebSocketService {
                 availableBalance: spotBalance.total,
                 totalBalance: spotBalance.total
             })
+
+            accountSpotBalance += Number(spotBalance.total)
         })
-        
-        store.dispatch(setUserBalances(tempBalances))
+
+        store.dispatch(tradeSliceActions.setUserBalances(tempBalances))
 
         // MARK: - Positions
 
         // if (store.getState().trade.assetPositions != webData2.clearinghouseState.assetPositions) {
-            let assetPositions: any[] = webData2.clearinghouseState.assetPositions
-            for (let i: any; i< assetPositions.length; i++) {
-                // @ts-ignore
-                let item = webData2.meta.universe.firstIndex((u: any) => {u.name == assetPositions[i].position.coin})
-                if (item != null) {
-                    assetPositions[i].position.markPx = webData2.assetCtxs[i].markPx
-                }
+        let assetPositions: any[] = webData2.clearinghouseState.assetPositions
+        for (let i: any; i < assetPositions.length; i++) {
+            // @ts-ignore
+            let item = webData2.meta.universe.firstIndex((u: any) => { u.name == assetPositions[i].position.coin })
+            if (item != null) {
+                assetPositions[i].position.markPx = webData2.assetCtxs[i].markPx
             }
+        }
         // }
 
-        store.dispatch(setUserAssetPositions(assetPositions))
-        
-        
+        store.dispatch(tradeSliceActions.setUserAssetPositions(assetPositions))
+
+
         // MARK: - Open Orders
-        
+
         // openOrders = webData2.openOrders
         const tempOpenOrders: OpenOrdersModel[] = webData2.openOrders?.map((e) => {
             return {
@@ -276,13 +350,37 @@ class WebSocketService {
                 tif: e.tif
             }
         })
-        store.dispatch(setUserOpenOrders(tempOpenOrders))
+        store.dispatch(tradeSliceActions.setUserOpenOrders(tempOpenOrders))
+
+
+        // account redux
+
+        let perpsOverviewUnrealizedPNL = 0
+
+        webData2.clearinghouseState.assetPositions.forEach((e) => {
+            perpsOverviewUnrealizedPNL += Number(e.position.unrealizedPnl)
+        })
+
+        let perpsOverviewBalance = Number(webData2.clearinghouseState.marginSummary.accountValue) - perpsOverviewUnrealizedPNL
+
+        let perpsOverviewCrossMarginRatio = Number(webData2.clearinghouseState.crossMaintenanceMarginUsed) / Number(webData2.clearinghouseState.crossMarginSummary.accountValue) * 100
+
+        let perpsOverviewMaintenanceMargin = Number(webData2.clearinghouseState.crossMaintenanceMarginUsed)
+        let perpsOverviewCrossAccountLeverage = Number(webData2.clearinghouseState.crossMarginSummary.totalNtlPos) / Number(webData2.clearinghouseState.crossMarginSummary.accountValue)
+        
+        store.dispatch(accountSliceActions.setAccountEquitySpotBalance(accountSpotBalance))
+        store.dispatch(accountSliceActions.setAccountEquityPerpsBalance(Number(webData2.clearinghouseState.marginSummary.accountValue)))
+        store.dispatch(accountSliceActions.setPerpsOverviewBalance(perpsOverviewBalance))
+        store.dispatch(accountSliceActions.setPerpsOverviewUnrealizedPnl(perpsOverviewUnrealizedPNL))
+        store.dispatch(accountSliceActions.setPerpsOverviewCrossMarginRatio(perpsOverviewCrossMarginRatio))
+        store.dispatch(accountSliceActions.setPerpsOverviewMaintenanceMargin(perpsOverviewMaintenanceMargin))
+        store.dispatch(accountSliceActions.setPerpsOverviewCrossAccountLeverage(perpsOverviewCrossAccountLeverage))
     };
 
     l2BookHandler = (l2Book: L2BookResponse) => {
 
         let tempL2Bool: L2BookLevelModel[][] = []
-        
+
         if (l2Book) {
             let tempAsks: L2BookLevelModel[] = []
             for (const e of l2Book.levels[0]) {
@@ -306,7 +404,7 @@ class WebSocketService {
             tempL2Bool.push(tempBids)
         }
 
-        store.dispatch(setAssetL2Book(tempL2Bool))
+        store.dispatch(tradeSliceActions.setAssetL2Book(tempL2Bool))
     }
 }
 

@@ -1,4 +1,4 @@
-export default interface AssetModel {
+export  interface AssetModel {
     // meta
     szDecimals: number
     name: string
@@ -9,4 +9,17 @@ export default interface AssetModel {
     markPx: string
     midPx: string | null
     dayNtlVlm: string
+}
+
+export interface AssetInfoModel {
+    name: string
+    maxLeverage: number
+
+    prevDayPx: string
+    markPx: string
+    oraclePx: string
+    dayVlm: string
+    oi: string
+    funding: string
+    countdown: string
 }
