@@ -50,9 +50,6 @@ Join our community of developers creating universal apps.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
 
 
-чтобы сделать сборку надо сбилдить папки ios и андройд, делается это командой
-npx expo prebuild
-
 в ios нужно прописывать профайлы
 
 # ОБЯЗАТЕЛЬНО ПРОПИСАТЬ! Отключение Ad Id для Firebase Analytics
@@ -70,23 +67,25 @@ end
 npx expo prebuild --clean
 
 # Просто запускает Metro сервер (без нативной сборки)
-expo start
+npx expo start
 
 # Собирает production версию (APK/AAB)
-expo build:android
+npx expo build:android
 
 # Только генерирует нативные папки (без сборки)
-expo prebuild
+npx expo prebuild
 
 # Сборка и запуск для Android
-expo run:android
+npx expo run:android
 
 # Сборка и запуск для iOS
-expo run:ios
+npx expo run:ios
 
 
 для сборки нормального билда андройд
-eas build --platform android --profile preview
+eas build --platform android --profile preview --local
+
+npx expo prebuild --clean && s
 
 если ошибки с подами вот возможный фикс
 
@@ -100,3 +99,16 @@ target 'hypermobile' do
 end
 
 
+# Sentry
+npx @sentry/wizard@latest -i reactNative --saas --org hyperliquid-mobile-rn --project react-native
+
+
+"@react-native-firebase/analytics": "23.8.6",
+"@react-native-firebase/app": "23.8.6",
+"@react-native-firebase/crashlytics": "^23.8.6",
+
+прописать плагины в app.josn
+"plugins": [
+  "expo-router",
+  "@react-native-firebase/app",
+  "@react-native-firebase/crashlytics",

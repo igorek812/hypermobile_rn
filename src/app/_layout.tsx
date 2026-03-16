@@ -1,3 +1,4 @@
+import Aptabase from "@aptabase/react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "react-native";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -6,6 +7,8 @@ import { Provider } from 'react-redux';
 import { COLORS } from "../constants/colors";
 import GlobalProvider from "../context/global-provider";
 import store from "../store/store";
+
+Aptabase.init("A-EU-3133306571");
 
 export default function RootLayout() {
   return (

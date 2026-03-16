@@ -2,7 +2,7 @@
   "expo": {
     "name": "hypermobile",
     "slug": "hypermobile",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/app_icon_hypermobile_rn.png",
     "scheme": "hypermobilern",
@@ -38,15 +38,6 @@
     },
     "plugins": [
       "expo-router",
-      "@react-native-firebase/app",
-      [
-        "expo-build-properties",
-        {
-          "ios": {
-            "useFrameworks": "static"
-          }
-        }
-      ],
       [
         "expo-splash-screen",
         {
@@ -69,6 +60,14 @@
       ],
       [
         "expo-system-ui"
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "react-native",
+          "organization": "hyperliquid-mobile-rn"
+        }
       ]
     ],
     "experiments": {

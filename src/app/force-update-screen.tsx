@@ -46,8 +46,8 @@ const ForceUpdateScreen = () => {
                 justifyContent: "space-between"
             }}>
                 <View>
-                    <StyledText style={{ marginTop: 20, marginLeft: 20, fontSize: 32, fontWeight: 'bold' }}>New version is available</StyledText>
-                    <StyledText style={{ marginTop: 20, marginHorizontal: 20 }}>Please update app</StyledText>
+                    <StyledText style={{ marginTop: 20, marginLeft: 20, fontSize: 32, fontWeight: 'bold' }}>Update required</StyledText>
+                    <StyledText style={{ marginTop: 20, marginHorizontal: 20 }}>New version is available. Please update app</StyledText>
                 </View>
 
                 <View>

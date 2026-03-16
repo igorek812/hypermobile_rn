@@ -1,6 +1,7 @@
 import StyledImage from '@/src/components/styled-image';
 import StyledText from '@/src/components/styled-text';
 import { COLORS } from '@/src/constants/colors';
+import { CONSTANTS } from '@/src/constants/constants';
 import Errors from '@/src/constants/errors';
 import { useGlobalContext } from '@/src/context/global-provider';
 import { getNftList, GetNftListItemInterface } from '@/src/services/api/opensea-service';
@@ -42,9 +43,13 @@ export default function NftScreen() {
             return
         }
 
+        const accountAddress = CONSTANTS.IS_DEV
+            ? CONSTANTS.NFT_TEST_ACCOUNT
+            : agentWallet.address
+
         appDispatch(getNftList({
             chain: 'hyperevm',
-            accountAddress: '0x123a05606ad682f0eab8a53ee6d41e8248e05b1c'
+            accountAddress: accountAddress
         }))
     }
 
